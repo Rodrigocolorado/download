@@ -1,37 +1,56 @@
-const express = require("express");
-const { exec } = require("child_process");
+'const express = require("express");
+const { spawn } = require("child_process");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post("/download", (req, res) => {
-  const url = req.body.url;
+let progressClients = [];
 
-  if (!url) {
-    return res.status(400).json({ error: "URL inválida" });
-  }
+app.get("/progress", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
 
-  // Comando yt-dlp
-  const command = `yt-dlp -j ${url}`;
+  progressClients.push(res);
 
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      return res.status(500).json({ error: "Erro ao processar vídeo" });
-    }
-
-    const data = JSON.parse(stdout);
-
-    res.json({
-      title: data.title,
-      thumbnail: data.thumbnail,
-      formats: data.formats.slice(0, 5).map(f => ({
-        quality: f.format_note,
-        url: f.url
-      }))
-    });
+  req.on("close", () => {
+    progressClients = progressClients.filter(c => c !== res);
   });
 });
 
-app.listen(3000, () => console.log("Servidor rodando na porta 3000"));
+function sendProgress(data) {
+  progressClients.forEach(client => {
+    client.write(`data: ${JSON.stringify(data)}\n\n`);
+  });
+}
+
+app.post("/download", (req, res) => {
+  const url = req.body.url;
+
+  const ytdlp = spawn("yt-dlp", [
+    "-f", "best",
+    "--newline",
+    url,
+    "-o", "video.%(ext)s"
+  ]);
+
+  ytdlp.stdout.on("data", (data) => {
+    const text = data.toString();
+
+    // captura % de progresso
+    const match = text.match(/(\d+\.\d+)%/);
+    if (match) {
+      sendProgress({ percent: match[1] });
+    }
+  });
+
+  ytdlp.on("close", () => {
+    sendProgress({ percent: 100, done: true });
+  });
+
+  res.json({ status: "Download iniciado" });
+});
+
+app.listen(3000, () => console.log("Servidor rodando"));
