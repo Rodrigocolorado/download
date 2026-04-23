@@ -48,3 +48,38 @@ async function converter() {
     result.innerHTML = "<p>Erro no servidor</p>";
   }
 }
+
+let eventSource;
+
+async function converter() {
+  let url = document.getElementById("url").value;
+  let progressBar = document.getElementById("progressBar");
+  let container = document.querySelector(".progress-container");
+
+  container.classList.remove("hidden");
+  progressBar.style.width = "0%";
+
+  // abre conexão de progresso
+  eventSource = new EventSource("http://localhost:3000/progress");
+
+  eventSource.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+
+    if (data.percent) {
+      progressBar.style.width = data.percent + "%";
+    }
+
+    if (data.done) {
+      eventSource.close();
+      alert("Download concluído!");
+    }
+  };
+
+  await fetch("http://localhost:3000/download", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ url })
+  });
+}
