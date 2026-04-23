@@ -2,21 +2,30 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Downloader de Vídeos</title>
+  <title>Video Downloader Pro</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-  <h1>Baixar Vídeos do YouTube</h1>
+<header>
+  <h1>Video Downloader</h1>
+  <p>Baixe vídeos em alta qualidade</p>
+</header>
 
-  <div class="box">
-    <input type="text" id="url" placeholder="Cole o link do vídeo aqui">
+<main>
+  <div class="search-box">
+    <input type="text" id="url" placeholder="Cole o link do YouTube aqui...">
     <button onclick="converter()">Converter</button>
   </div>
 
+  <div id="loader" class="hidden"></div>
+
   <div id="result"></div>
-</div>
+</main>
+
+<footer>
+  <p>© 2026 - Seu App</p>
+</footer>
 
 <script src="script.js"></script>
 </body>
