@@ -1,23 +1,36 @@
-function converter() {
+async function converter() {
   let url = document.getElementById("url").value;
+  let result = document.getElementById("result");
 
-  if (!url) {
-    alert("Cole um link primeiro!");
+  result.innerHTML = "Carregando...";
+
+  const response = await fetch("http://localhost:3000/download", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ url })
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    result.innerHTML = "Erro!";
     return;
   }
 
-  let result = document.getElementById("result");
+  result.innerHTML = `
+    <h3>${data.title}</h3>
+    <img src="${data.thumbnail}" width="200">
+  `;
 
-  // Simulação de processamento
-  result.innerHTML = "<p>Processando...</p>";
-
-  setTimeout(() => {
-    result.innerHTML = `
-      <h3>Escolha o formato:</h3>
-
-      <div class="download-btn">Baixar MP4 720p</div>
-      <div class="download-btn">Baixar MP4 1080p</div>
-      <div class="download-btn">Baixar MP3 320kbps</div>
+  data.formats.forEach(f => {
+    result.innerHTML += `
+      <a href="${f.url}" target="_blank">
+        <div class="download-btn">
+          Baixar ${f.quality || "Qualidade"}
+        </div>
+      </a>
     `;
-  }, 1500);
+  });
 }
